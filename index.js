@@ -332,7 +332,8 @@ app.post("/", (req, res) => {
  let sss = req.body;
  sss.reply = "I am ok";
  res.json({
-  okay: true
+  okay: true,
+  reply:"see me"
  });
 });
 
@@ -424,7 +425,7 @@ app.post("/Buying", async (req, res) => {
  }
 });
 
-app.use(()=>{
+app.use((req,res)=>{
 	res.send(true);
 })
 
