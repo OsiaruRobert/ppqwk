@@ -1,0 +1,25 @@
+{
+  "name": "ppqwk",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/OsiaruRobert/ppqwk#readme",
+  "bugs": {
+    "url": "https://github.com/OsiaruRobert/ppqwk/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OsiaruRobert/ppqwk.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.1"
+  }
+}
