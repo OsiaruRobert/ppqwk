@@ -423,6 +423,11 @@ app.post("/Buying", async (req, res) => {
   res.send(`We noticed ${err.message}`);
  }
 });
+
+app.use(()=>{
+	res.send(true);
+})
+
 // start server
 app.listen(process.env.PORT, async () => {
  await connectDB();
