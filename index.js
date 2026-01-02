@@ -344,9 +344,13 @@ async function increaseTokens(gmail, amount, notes, ref) {
   //get user
   let user = await User.findOne({ gmail: gmail });
   if (!user) throw new Error(`User ${gmail} not found`);
-  //Increase balance
+  
+  //Find transactions not our still.
+  
+  
+//Increase balance
   user.wallet.balance = user.wallet.balance + amount;
-
+  
   //Save transactions
   const trans = {
    type: "funding",
