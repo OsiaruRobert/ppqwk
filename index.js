@@ -435,6 +435,13 @@ app.use((req,res)=>{
 
 // start server
 app.listen(process.env.PORT, async () => {
+	try{
  await connectDB();
  console.log(`Our app is listening`);
+	}catch(err){
+		
+ console.log(err.message);
+ console.log(`Our app is not listening`);
+	}
+		
 });
