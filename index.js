@@ -485,7 +485,7 @@ async function buyShares(gmail, amount, ref) {
   let admin = await Shares.findOne({ gmail: "ppqadmin@gmail.com" });
   if (!admin) throw new Error(`admin ppqadmin@gmail.com not found`);
   admin.shares = admin.shares - amount;
-  adminTrans = {
+const  adminTrans = {
    type: "buy",
    status: "pending",
    amount: amount,
