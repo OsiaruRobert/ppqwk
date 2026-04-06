@@ -488,8 +488,8 @@ async function buyShares(gmail, amount,ref) {
 		amount = Number(amount)
   
   //get admin
-  let admin = await User.findOne({ gmail: "ppqdamin@gmail.com" });
-  if (!admin) throw new Error(`admin ppqdamin@gmail.com not found`);
+  let admin = await User.findOne({ gmail: "ppqadmin@gmail.com" });
+  if (!admin) throw new Error(`admin ppqadmin@gmail.com not found`);
 		admin.shares = admin.shares - amount;  
 		adminTrans = {
 			type: "buy",
