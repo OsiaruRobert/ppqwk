@@ -405,25 +405,29 @@ function getTimeOnly(locale = "en-US", options = {}) {
 const app = express();
 app.use(express.json());
 
-app.use(
-(req, res, next) => {
-  // Allow requests from any origin
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  // Allow specific methods
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  
-  // Allow specific headers
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-  
-  next();
-});
+app.use((req, res, next) => {
+ // Allow requests from any origin
+ res.setHeader("Access-Control-Allow-Origin", "*");
 
+ // Allow specific methods
+ res.setHeader(
+  "Access-Control-Allow-Methods",
+  "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+ );
+
+ // Allow specific headers
+ res.setHeader(
+  "Access-Control-Allow-Headers",
+  "Content-Type, Authorization, X-Requested-With"
+ );
+
+ // Handle preflight requests
+ if (req.method === "OPTIONS") {
+  return res.status(204).end();
+ }
+
+ next();
+});
 
 // home page route
 app.post("/", (req, res) => {
@@ -500,13 +504,13 @@ async function increaseTokens(gmail, amount, notes, ref) {
 async function buyShares(gmail, amount, ref) {
  try {
   amount = Number(amount);
-console.log(`Buy ${amount} shares for ${gmail}`)
-console.log(`Finding admin`)
+  console.log(`Buy ${amount} shares for ${gmail}`);
+  console.log(`Finding admin`);
   //get admin
   let admin = await Shares.findOne({ gmail: "ppqadmin@gmail.com" });
   if (!admin) throw new Error(`admin ppqadmin@gmail.com not found`);
   admin.shares = admin.shares - amount;
-const  adminTrans = {
+  const adminTrans = {
    type: "buy",
    status: "pending",
    amount: amount,
@@ -518,41 +522,42 @@ const  adminTrans = {
   };
   admin.transactions.unshift(adminTrans);
   admin.save();
-console.log(`found and tax admin`)
+  console.log(`found and tax admin`);
 
-
-console.log(`Finding buyer`)
+  console.log(`Finding buyer`);
   //get user
   let user = await User.findOne({ gmail: gmail });
   if (!user) throw new Error(`User ${gmail} not found`);
-console.log(`found buyer`)
+  console.log(`found buyer`);
 
-
-console.log(`Finding shares`)
+  console.log(`Finding shares`);
   //Find share holder
   let shareHolder = await Shares.findOne({ gmail: gmail });
   if (!shareHolder) throw new Error(`shareHolder not found`);
-console.log(`found shares`)
+  console.log(`found shares`);
 
-
-console.log(`Finding shareHolderTrans`)
+  console.log(`Finding shareHolderTrans`);
   //Increase balance
+  let transIndex = false;
   const shareHolderTrans = shareHolder.transactions;
   for (let i = 0; i < shareHolderTrans.length; i++) {
-   let trans = shareHolderTrans[i];
-   if (trans.transactionid === ref) {
-    shareHolderTrans[i].status = "success";
-    shareHolderTrans[i].date.verified = Date.now();
-    shareHolder.shares = shareHolder.shares + amount;
-    console.log(`found shareHolderTran`)
-
-    return;
+   if (!transIndex) {
+    let trans = shareHolderTrans[i];
+    if (trans.transactionid === ref && trans.status==="pending" ) {
+     transIndex = i;
+     console.log(`found shareHolderTran`);
+    }
    }
   }
-  await shareHolderTrans.save();
+  if (!transIndex) throw new Error("transaction aready worked.")
+  shareHolderTrans[transIndex].status = "success";
+  shareHolderTrans[transIndex].date.verified = Date.now();
+  shareHolder.shares = shareHolder.shares + amount;
+
+  await shareHolder.save();
 
   //Save transactions to user
-  console.log(`save to user`)
+  console.log(`save to user`);
   const trans = {
    type: "buy shares",
    cost: amount,
@@ -570,8 +575,7 @@ console.log(`Finding shareHolderTrans`)
   user.transactions.push(trans);
   await user.save();
 
-
-  console.log(`save to global`)
+  console.log(`save to global`);
   //save global
   const gt = {
    userTransaction: {
@@ -594,7 +598,7 @@ console.log(`Finding shareHolderTrans`)
   const gti = new Gtransactions(gt);
   await gti.save();
 
-  console.log(`all good`)
+  console.log(`all good`);
 
   return true;
  } catch (error) {
