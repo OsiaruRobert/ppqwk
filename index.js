@@ -3,6 +3,7 @@ import express from "express";
 import mongoose from "mongoose";
 import 'dotenv/config'; 
 
+//Users in DB
 const userSchema = new mongoose.Schema(
  {
   //Normal account info
@@ -243,7 +244,7 @@ const userSchema = new mongoose.Schema(
 );
 const User = mongoose.model("User", userSchema);
 
-//ggg
+//transaction in DB
 const transactionSchema = new mongoose.Schema({
  userTransaction: {
   type: {
@@ -292,8 +293,89 @@ const transactionSchema = new mongoose.Schema({
   type: String
  }
 });
-
 const Gtransactions = mongoose.model("transactions", transactionSchema);
+
+//Shares in DB
+const sharesSchema = new mongoose.Schema(
+ {
+  gmail: {
+   type: String,
+   required: [true, "Please enter your Gmail address"],
+   unique: [
+    true,
+    "This gmail already has an account. Please login or close the account. You can ask admin to close the account"
+   ],
+   trim: true,
+   lowercase: true,
+   maxlength: [100, "Email is too long"],
+   match: [
+    /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+    "Please enter a valid Gmail address"
+   ]
+  },
+  //wallet info
+  shares: {
+   type: Number
+  },
+
+  account: {
+   bank_name: {
+    type: String
+   },
+
+   account_number: {
+    type: String
+   },
+
+   account_name: {
+    type: String
+   }
+  },
+
+  wallet: {
+   type: String
+  },
+  
+  transactions: [
+   {
+    type: {
+     type: String,
+     required: true
+    },
+    status: {
+     type: String,
+     enum: ["pending", "success", "failed"],
+     default: "pending"
+    },
+    amount: {
+     type: Number,
+     required: true,
+     min: [1, "Amount is 1"]
+    },
+    transactionid: {
+     type: String
+    },
+    date: {
+   initiated: {
+    type: Date,
+    default: Date.now
+   },
+   verified: {
+    type: Date,
+    default: null
+   }
+   }
+	 }
+  ]
+},
+ {
+  timestamps: true
+ }
+);
+const Shares = mongoose.model("Shares", sharesSchema);
+
+
+
 
 //connect to database
 async function connectDB() {
@@ -399,6 +481,101 @@ async function increaseTokens(gmail, amount, notes, ref) {
  }
 }
 
+//Increase tokens
+async function buyShares(gmail, amount,ref) {
+
+ try {
+		amount = Number(amount)
+  
+  //get admin
+  let admin = await User.findOne({ gmail: "ppqdamin@gmail.com" });
+  if (!admin) throw new Error(`admin ppqdamin@gmail.com not found`);
+		admin.shares = admin.shares - amount;  
+		adminTrans = {
+			type: "buy",
+   status: "pending",
+   amount: amount,
+   transactionid: ref,
+   date :{
+   		initial : Date.now(),
+   		verified : Date.now()
+   }
+		};
+		admin.transactions.unshift(adminTrans);
+		admin.save();
+
+  //get user
+  let user = await User.findOne({ gmail: gmail });
+  if (!user) throw new Error(`User ${gmail} not found`);
+  
+  //Find share holder
+  let shareHolder = await Sharses.findOne({ gmail: gmail });
+  if (!shareHolder) throw new Error(`shareHolder not found`);
+  
+  
+  
+//Increase balance
+  shareHolder.shares  = shareHolder.shares  + amount;
+  
+  const shareHolderTrans = shareHolder.transactions;
+  for(let i = 0; i<shareHolderTrans.length; i++){
+  	let trans = shareHolderTrans[i];
+  	if(trans.transactionid===ref){
+  		shareHolderTrans[i].status = "success";
+  		shareHolderTrans[i].date.verified = Date.now();
+  		return;
+  	}
+  }
+  await shareHolderTrans.save();
+  
+  //Save transactions to user
+  const trans = {
+   type: "buy shares",
+   cost: amount,
+   description: `Bought ${amount} Shares`,
+   status: "success",
+   date: {
+    start: Date.now(),
+    verified: Date.now()
+   },
+   new_balance: user.wallet.balance,
+   old_balance: user.wallet.balance,
+   transactionid: ref,
+   sessionid: user.sensetive.sessionid.value
+  };
+
+  user.transactions.push(trans);
+  await user.save();
+
+  //save global
+  const gt = {
+   userTransaction: {
+    type: "Buy shares",
+    cost: amount,
+    description: `Bought ${amount} Shares`,
+    status: "success",
+    date: {
+     start: Date.now(),
+     verified: Date.now()
+    },
+    new_balance: user.wallet.balance,
+    old_balance: user.wallet.balance
+   },
+   gmail: user.gmail,
+   transactionid: ref,
+   sessionid: user.sensetive.sessionid.value
+  };
+  
+  const gti = new Gtransactions(gt);
+  await gti.save();
+
+  return true;
+ } catch (error) {
+  console.error(`Error in deductTokens for ${gmail}:`, error);
+  throw error;
+ }
+}
+
 app.post("/Buying", async (req, res) => {
  try {
  	console.log(req.body)
@@ -409,12 +586,22 @@ app.post("/Buying", async (req, res) => {
    const gmail = payDetails.email;
    const amount = Number(payDetails.amount);
 
-   await increaseTokens(
+if(payDetails.command === "buyshares"){
+await buyShares(
+    gmail,
+    amount,
+    req.body.data.reference
+   );
+	
+}else{
+await increaseTokens(
     gmail,
     amount,
     `Bought ${amount} PPQ coins`,
     req.body.data.reference
    );
+}
+	
 
    res.send("done");
   } else {
