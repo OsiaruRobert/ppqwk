@@ -1,7 +1,7 @@
 // Express application
 import express from "express";
 import mongoose from "mongoose";
-import 'dotenv/config'; 
+import "dotenv/config";
 
 //Users in DB
 const userSchema = new mongoose.Schema(
@@ -335,7 +335,7 @@ const sharesSchema = new mongoose.Schema(
   wallet: {
    type: String
   },
-  
+
   transactions: [
    {
     type: {
@@ -356,26 +356,23 @@ const sharesSchema = new mongoose.Schema(
      type: String
     },
     date: {
-   initiated: {
-    type: Date,
-    default: Date.now
-   },
-   verified: {
-    type: Date,
-    default: null
+     initiated: {
+      type: Date,
+      default: Date.now
+     },
+     verified: {
+      type: Date,
+      default: null
+     }
+    }
    }
-   }
-	 }
   ]
-},
+ },
  {
   timestamps: true
  }
 );
 const Shares = mongoose.model("Shares", sharesSchema);
-
-
-
 
 //connect to database
 async function connectDB() {
@@ -415,24 +412,22 @@ app.post("/", (req, res) => {
  sss.reply = "I am ok";
  res.json({
   okay: true,
-  reply:"see me"
+  reply: "see me"
  });
 });
 
 //Increase tokens
 async function increaseTokens(gmail, amount, notes, ref) {
-
  try {
   //get user
   let user = await User.findOne({ gmail: gmail });
   if (!user) throw new Error(`User ${gmail} not found`);
-  
+
   //Find transactions not our still.
-  
-  
-//Increase balance
+
+  //Increase balance
   user.wallet.balance = user.wallet.balance + amount;
-  
+
   //Save transactions
   const trans = {
    type: "funding",
@@ -470,7 +465,7 @@ async function increaseTokens(gmail, amount, notes, ref) {
    transactionid: ref,
    sessionid: user.sensetive.sessionid.value
   };
-  
+
   const gti = new Gtransactions(gt);
   await gti.save();
 
@@ -482,52 +477,49 @@ async function increaseTokens(gmail, amount, notes, ref) {
 }
 
 //Increase tokens
-async function buyShares(gmail, amount,ref) {
-
+async function buyShares(gmail, amount, ref) {
  try {
-		amount = Number(amount)
-  
+  amount = Number(amount);
+
   //get admin
-  let admin = await User.findOne({ gmail: "ppqadmin@gmail.com" });
+  let admin = await Shares.findOne({ gmail: "ppqadmin@gmail.com" });
   if (!admin) throw new Error(`admin ppqadmin@gmail.com not found`);
-		admin.shares = admin.shares - amount;  
-		adminTrans = {
-			type: "buy",
+  admin.shares = admin.shares - amount;
+  adminTrans = {
+   type: "buy",
    status: "pending",
    amount: amount,
    transactionid: ref,
-   date :{
-   		initial : Date.now(),
-   		verified : Date.now()
+   date: {
+    initial: Date.now(),
+    verified: Date.now()
    }
-		};
-		admin.transactions.unshift(adminTrans);
-		admin.save();
+  };
+  admin.transactions.unshift(adminTrans);
+  admin.save();
 
   //get user
   let user = await User.findOne({ gmail: gmail });
   if (!user) throw new Error(`User ${gmail} not found`);
-  
+
   //Find share holder
-  let shareHolder = await Sharses.findOne({ gmail: gmail });
+  let shareHolder = await Shares.findOne({ gmail: gmail });
   if (!shareHolder) throw new Error(`shareHolder not found`);
-  
-  
-  
-//Increase balance
-  shareHolder.shares  = shareHolder.shares  + amount;
-  
+
+  //Increase balance
+
   const shareHolderTrans = shareHolder.transactions;
-  for(let i = 0; i<shareHolderTrans.length; i++){
-  	let trans = shareHolderTrans[i];
-  	if(trans.transactionid===ref){
-  		shareHolderTrans[i].status = "success";
-  		shareHolderTrans[i].date.verified = Date.now();
-  		return;
-  	}
+  for (let i = 0; i < shareHolderTrans.length; i++) {
+   let trans = shareHolderTrans[i];
+   if (trans.transactionid === ref) {
+    shareHolderTrans[i].status = "success";
+    shareHolderTrans[i].date.verified = Date.now();
+    shareHolder.shares = shareHolder.shares + amount;
+    return;
+   }
   }
   await shareHolderTrans.save();
-  
+
   //Save transactions to user
   const trans = {
    type: "buy shares",
@@ -565,7 +557,7 @@ async function buyShares(gmail, amount,ref) {
    transactionid: ref,
    sessionid: user.sensetive.sessionid.value
   };
-  
+
   const gti = new Gtransactions(gt);
   await gti.save();
 
@@ -578,7 +570,7 @@ async function buyShares(gmail, amount,ref) {
 
 app.post("/Buying", async (req, res) => {
  try {
- 	console.log(req.body)
+  console.log(req.body);
 
   //Extract values
   if (req.body.event === "charge.success") {
@@ -586,22 +578,16 @@ app.post("/Buying", async (req, res) => {
    const gmail = payDetails.email;
    const amount = Number(payDetails.amount);
 
-if(payDetails.command === "buyshares"){
-await buyShares(
-    gmail,
-    amount,
-    req.body.data.reference
-   );
-	
-}else{
-await increaseTokens(
-    gmail,
-    amount,
-    `Bought ${amount} PPQ coins`,
-    req.body.data.reference
-   );
-}
-	
+   if (payDetails.command === "buyshares") {
+    await buyShares(gmail, amount, req.body.data.reference);
+   } else {
+    await increaseTokens(
+     gmail,
+     amount,
+     `Bought ${amount} PPQ coins`,
+     req.body.data.reference
+    );
+   }
 
    res.send("done");
   } else {
@@ -616,19 +602,17 @@ await increaseTokens(
  }
 });
 
-app.use((req,res)=>{
-	res.send(true);
-})
+app.use((req, res) => {
+ res.send(true);
+});
 
 // start server
 app.listen(process.env.PORT, async () => {
-	try{
- await connectDB();
- console.log(`Our app is listening`);
-	}catch(err){
-		
- console.log(err.message);
- console.log(`Our app is not listening`);
-	}
-		
+ try {
+  await connectDB();
+  console.log(`Our app is listening`);
+ } catch (err) {
+  console.log(err.message);
+  console.log(`Our app is not listening`);
+ }
 });
