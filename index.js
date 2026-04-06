@@ -405,6 +405,26 @@ function getTimeOnly(locale = "en-US", options = {}) {
 const app = express();
 app.use(express.json());
 
+app.use(
+(req, res, next) => {
+  // Allow requests from any origin
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Allow specific methods
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  
+  // Allow specific headers
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  
+  next();
+});
+
+
 // home page route
 app.post("/", (req, res) => {
  console.log(req.body);
@@ -480,7 +500,8 @@ async function increaseTokens(gmail, amount, notes, ref) {
 async function buyShares(gmail, amount, ref) {
  try {
   amount = Number(amount);
-
+console.log(`Buy ${amount} shares for ${gmail}`)
+console.log(`Finding admin`)
   //get admin
   let admin = await Shares.findOne({ gmail: "ppqadmin@gmail.com" });
   if (!admin) throw new Error(`admin ppqadmin@gmail.com not found`);
@@ -497,17 +518,25 @@ const  adminTrans = {
   };
   admin.transactions.unshift(adminTrans);
   admin.save();
+console.log(`found and tax admin`)
 
+
+console.log(`Finding buyer`)
   //get user
   let user = await User.findOne({ gmail: gmail });
   if (!user) throw new Error(`User ${gmail} not found`);
+console.log(`found buyer`)
 
+
+console.log(`Finding shares`)
   //Find share holder
   let shareHolder = await Shares.findOne({ gmail: gmail });
   if (!shareHolder) throw new Error(`shareHolder not found`);
+console.log(`found shares`)
 
+
+console.log(`Finding shareHolderTrans`)
   //Increase balance
-
   const shareHolderTrans = shareHolder.transactions;
   for (let i = 0; i < shareHolderTrans.length; i++) {
    let trans = shareHolderTrans[i];
@@ -515,12 +544,15 @@ const  adminTrans = {
     shareHolderTrans[i].status = "success";
     shareHolderTrans[i].date.verified = Date.now();
     shareHolder.shares = shareHolder.shares + amount;
+    console.log(`found shareHolderTran`)
+
     return;
    }
   }
   await shareHolderTrans.save();
 
   //Save transactions to user
+  console.log(`save to user`)
   const trans = {
    type: "buy shares",
    cost: amount,
@@ -535,10 +567,11 @@ const  adminTrans = {
    transactionid: ref,
    sessionid: user.sensetive.sessionid.value
   };
-
   user.transactions.push(trans);
   await user.save();
 
+
+  console.log(`save to global`)
   //save global
   const gt = {
    userTransaction: {
@@ -560,6 +593,8 @@ const  adminTrans = {
 
   const gti = new Gtransactions(gt);
   await gti.save();
+
+  console.log(`all good`)
 
   return true;
  } catch (error) {
