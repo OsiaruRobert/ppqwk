@@ -539,17 +539,21 @@ async function buyShares(gmail, amount, ref) {
   console.log(`Finding shareHolderTrans`);
   //Increase balance
   let transIndex = false;
+  let transIndexFound = false;
   const shareHolderTrans = shareHolder.transactions;
   for (let i = 0; i < shareHolderTrans.length; i++) {
-   if (!transIndex) {
+   if (!transIndexFound) {
     let trans = shareHolderTrans[i];
     if (trans.transactionid === ref && trans.status==="pending" ) {
      transIndex = i;
+     transIndexFound = true;
+     
      console.log(`found shareHolderTran`);
+     console.log(shareHolderTrans[transIndex]);
     }
    }
   }
-  if (!transIndex) throw new Error("transaction aready worked.")
+  if (!transIndexFound) throw new Error("transaction aready worked.")
   shareHolderTrans[transIndex].status = "success";
   shareHolderTrans[transIndex].date.verified = Date.now();
   shareHolder.shares = shareHolder.shares + amount;
