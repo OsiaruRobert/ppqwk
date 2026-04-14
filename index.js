@@ -650,8 +650,10 @@ app.listen(process.env.PORT, async () => {
  try {
   await connectDB();
   console.log(`Our app is listening`);
+  console.log(`Our shares`);
  } catch (err) {
   console.log(err.message);
   console.log(`Our app is not listening`);
+  process.exit(1)
  }
 });
